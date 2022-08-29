@@ -637,7 +637,7 @@ function _runServer(argv, hooks) {
   app.use(function(req, res, next){
     req.user = argv.config.user;
     req.metadata = argv.config.metadata;
-    req.idp = { options: idpOptions };
+    req.idp = { options: {...idpOptions}};
     req.participant = getParticipant(req);
     next();
   });
