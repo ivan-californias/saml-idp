@@ -20,7 +20,8 @@ const chalk               = require('chalk'),
       samlp               = require('samlp'),
       Parser              = require('@xmldom/xmldom').DOMParser,
       SessionParticipants = require('samlp/lib/sessionParticipants'),
-      SimpleProfileMapper = require('./lib/simpleProfileMapper.js');
+      SimpleProfileMapper = require('./lib/simpleProfileMapper.js'),
+      defaultHooks        = require('./hooks');
 
 /**
  * Globals
@@ -348,7 +349,7 @@ function processArgs(args, options) {
     .wrap(baseArgv.terminalWidth());
 }
 
-function _runServer(argv) {
+function _runServer(argv, hooks) {
   const app = express();
   const httpServer = argv.https ?
     https.createServer({ key: argv.httpsPrivateKey, cert: argv.httpsCert }, app) :
@@ -679,6 +680,9 @@ function _runServer(argv) {
     // Set Session Index
     authOptions.sessionIndex = getSessionIndex(req);
 
+    // Call onSignInBeforeSamlAuth hook if defined
+    hooks?.onSignInBeforeSamlAuth?.(authOptions, req);
+
     // Keep calm and Single Sign On
     console.log(dedent(chalk`
       Generating SAML Response using =>
@@ -822,16 +826,22 @@ function _runServer(argv) {
 
 function runServer(options) {
   const args = processArgs([], options);
-  return _runServer(args.argv);
+  return _runServer(args.argv, defaultHooks);
+}
+
+function runServerWithHooks(options, hooks) {
+  const args = processArgs([], options);
+  return _runServer(args.argv, hooks);
 }
 
 function main () {
   const args = processArgs(process.argv.slice(2));
-  _runServer(args.argv);
+  _runServer(args.argv, defaultHooks);
 }
 
 module.exports = {
   runServer,
+  runServerWithHooks,
   main,
 };
 
